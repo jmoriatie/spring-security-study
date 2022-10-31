@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 @RequiredArgsConstructor
 @Service
@@ -22,7 +23,7 @@ public class UserService implements UserDetailsService {
      * @return UserDetails
      * @throws UsernameNotFoundException 유저가 없을 때 예외 발생
      */
-    @Override // 기본 반환타입 UserDetails, 얘를 상속바등ㄴ UserInfo로 반환 타입 저장(자동 다운캐스팅)
+    @Override // 기본 반환타입 UserDetails, 얘를 상속받은 UserInfo로 반환 타입 저장(자동 다운캐스팅)
     public UserInfo loadUserByUsername(String email) throws UsernameNotFoundException {// 시큐리티에서 지정한 서비스이기 때문에 이 메소드 필수 구현
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
@@ -34,7 +35,7 @@ public class UserService implements UserDetailsService {
      * @param infoDto 회원정보가 들어있는 DTO
      * @return 저장되는 회원의 PK
      */
-    public Long save(UserInfoDto infoDto){
+    public Long save(@ModelAttribute UserInfoDto infoDto){
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         infoDto.setPassword(encoder.encode(infoDto.getPassword())); // 패스워드 받아서 인코딩해서 다시 저장
 
@@ -43,6 +44,5 @@ public class UserService implements UserDetailsService {
                 .auth(infoDto.getAuth())
                 .password(infoDto.getPassword()).build()
         ).getCode();
-
     }
 }

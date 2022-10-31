@@ -2,30 +2,34 @@ package hello.security.config;
 
 import hello.security.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 
+@Configuration
+@EnableWebSecurity
 @RequiredArgsConstructor
-//@EnableWebSecurity
-//@Configuration
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+public class WebSecurityConfigNew {
 
     private final UserService userService;
 
-    // 인증을 무시할 경로들을 설정
-    @Override
-    public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/css/**", "/js/**", "/static/img/**", "/h2-console/**");
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().antMatchers("/css/**", "/js/**", "/static/img/**", "/h2-console/**");
     }
 
-    //http 관련 인증 설정이 가능
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
                     .antMatchers("/login", "/signup", "/user").permitAll() // 누구나 다 접근 가능
@@ -42,16 +46,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                         .logoutSuccessUrl("/login") // 로그아웃 성공시 리다이렉트 주소
                         .invalidateHttpSession(true) // 세션 없애기
                 ;
+        return http.build();
     }
 
-    // 로그인할 때 필요한 정보를 가져오는 곳
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        //유저 정보를 가져오는 서비스를 userService 로 지정합니다.
-        auth.userDetailsService(userService)
-                // 해당 서비스(userService)에서는 UserDetailsService를 implements해서
-                // 필요정보 -> loadUserByUsername() 메서드 -> 서비스 참고
-                .passwordEncoder(new BCryptPasswordEncoder());                ;
-        //패스워드 인코더는 passwordEncoder()를 사용합니다. (BCrypt)
+    @Bean
+    public PasswordEncoder encoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager (AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }
